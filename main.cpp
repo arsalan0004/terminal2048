@@ -503,8 +503,9 @@ int main(){
 		// update the display 
 		printGrid(grid);
 		
-		// check if game is over 
-		gameRunning =  !check_for_gameOver(grid);
+		// check if game is over, if it hasn't been quit through pressing 'q'
+		if(gameRunning == true)
+			gameRunning =  !check_for_gameOver(grid);
 	
 	}
 		
