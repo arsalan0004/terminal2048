@@ -1,7 +1,9 @@
 #include <iostream> 
-#include <thread>
+#include <random>
+
 #include <termios.h>
 #include <unistd.h>
+
 
 
 // grid is GRID_SIZE tall and wide
@@ -10,6 +12,40 @@
 // settings for the terminal (set in set_getChar(), restoreTerminal())
 struct termios newt, oldt;
 
+
+bool check_for_gameOver(int** grid){
+	
+	// grid must be full for there to be a chance that the game is over 
+	for(int r = 0; r< GRID_SIZE; r++){
+		for(int c =0; c< GRID_SIZE; c++){
+			if (grid[r][c] == 0) return false;
+		}
+	}
+	
+	// if the grid is full, check if there are any matching 
+	// numbers that are horizontally next to each other 
+	// grid must be full for there to be a chance that the game is over 
+	bool horizontal_match = false;
+	
+	for(int r = 0; r< GRID_SIZE; r++){
+		for(int c =0; c< GRID_SIZE -1; c++){
+			if (grid[r][c] == grid[r][c + 1]) return false;
+		}
+	}
+	
+	
+	
+	// check for vertical matches 
+	for(int c = 0; c< GRID_SIZE; c++){
+		for(int r =0; r< GRID_SIZE -1; r++){
+			if (grid[r][c] == grid[r + 1][r]) return false;
+		}
+	}
+	
+	// if no vertical or horizontal matches can be found 
+	return true;
+	
+}
 
 void setupInput(){
 
@@ -113,7 +149,6 @@ bool slideUp(int** grid){
 			
 			if(grid[r][c] == 0) continue;
 			
-			std::cout << r << c << std::endl;
 			
 			int p = r;
 			
@@ -126,7 +161,6 @@ bool slideUp(int** grid){
 					break;
 			}
 			
-			std:: cout << "p is " << p << std::endl;
 			
 			// move the value to the new open position 
 			if(p != r) {
@@ -149,11 +183,10 @@ bool slideUp(int** grid){
 			// since it doesnt have anything but the wall to bump (and fuse) with. 
 			if(p == 0) continue;
 			
-			std::cout << "fusion grid is " << fusionGrid[r][p - 1] << std::endl;;
 			
-			// if the left and number hasn't already been fused
+			// if the number ontop hasn't already been fused 
 			if(fusionGrid[p-1][c] == 0){
-				// if the left hand number is the same as current number 
+				// if the number on top is the same as current number 
 				if(grid[p][c] == grid[p-1][c]) {
 					
 					// 'fuse' the numbers 
@@ -190,20 +223,16 @@ bool slideDown(int** grid){
 	for(int c=0; c < GRID_SIZE; c++){
 		for(int r=GRID_SIZE-2; r >= 0; r--){
 			
+			// we ignore zeros 
 			if(grid[r][c] == 0) continue;
 			
-			
+			// set p (potential area) to check to see where we can move our number 
 			int p = r;
 			
-			
-			// find furthest point that the number can move 
-			while(p < GRID_SIZE-1) {
-				if (grid[p+1][c] == 0)
-					p++;
-				else 
-					break;
+			while(p < GRID_SIZE -1) {
+				if( grid[p][c] == 0 ) p++;
+				else break;
 			}
-			
 			
 			// move the value to the new open position 
 			if(p != r) {
@@ -224,26 +253,33 @@ bool slideDown(int** grid){
 			
 			// if the new position is at the bottom of the grid then don't worry about it 
 			// since it doesnt have anything but the wall to bump (and fuse) with. 
-			if(p == GRID_SIZE-1) continue;
+			if(p == GRID_SIZE -1) continue;
 			
 			
-			// if the left and number hasn't already been fused
-			if(fusionGrid[p-1][c] == 0){
-				// if the left hand number is the same as current number 
+			// if the number below hasn't already been fused 
+			if(fusionGrid[p+1][c] == 0){
+				// if the bottom number is the same as current number 
 				if(grid[p][c] == grid[p+1][c]) {
 					
 					// 'fuse' the numbers 
-					grid[p+1][c] = grid[p+1][c] * 2;
+					grid[p-1][c] = grid[p+1][c] * 2;
 					
 					// remove old entry 
-					grid[p][c]   = 0;
+					grid[p][c] = 0;
 					
 					// record that this number has been fused 
 					fusionGrid[p+1][c] = 1;
 				}
 			}
+			
+			
 		}
 	}
+			
+			
+			
+			
+	
 	
 	return movement;
 	
@@ -399,47 +435,91 @@ int main(){
 	int** grid = instantiateGrid();
 	
 	// add random numbers to the grid 
-	grid[1][1] = 2;
+	grid[0][1] = 2;
 	grid[1][3] = 2;
-	grid[1][2] = 2;
-	grid [2][1] = 4;
+	grid[2][2] = 2;
+	grid [3][1] = 4;
+	
+	
+	for(int i =0; i<GRID_SIZE; i++){
+		for(int j =0; j<GRID_SIZE; j++){
+			grid[i][j] = i + j + 3;
+		}
+	}
 	
 	// print the initial grid 
 	printGrid(grid);
 	
+	// provide seed value for random number 
+	srand((unsigned) time(NULL));
+	
 	while(gameRunning){
 		
-		mostRecentInput = getchar(); // get user input 
+		mostRecentInput = getchar(); // get user input
+		
+		bool opResult = false;
 		
 		switch(mostRecentInput){
 			case 'q': 
 				gameRunning = false;
 				restoreTerminal();
 				break;
-			case 'w': slideUp(grid); break;
-			case 's': slideDown(grid); break;
-			case 'a': slideLeft(grid) ; break;
-			case 'd': slideRight(grid); break;
-			default : std::cout << "error!";
+				
+			case 'w': 
+				opResult = slideUp(grid);
+				break;
+				
+			case 's':
+				opResult = slideDown(grid); 
+				break;
+				
+			case 'a':
+				opResult = slideLeft(grid);
+				break;
+				
+			case 'd':
+				opResult = slideRight(grid);
+				break;
+				
+			default : 
+				std::cout << "error!";
+			
+		}
+		
+		// there was movement  
+		if(opResult == true){
+			// generate a '2' or '4' somewhere random on the grid 
+			int twoOrFour = 2;
+			if(rand() % 2 == 0) twoOrFour = 4;
+			
+			bool suitablePlaceFound = false;
+			while(!suitablePlaceFound) {
+				// get random column number 
+				int rand_col = rand() % GRID_SIZE;
+				// get random row number 
+				int rand_row = rand() % GRID_SIZE;
+				
+				if(grid[rand_row][rand_col] == 0) {
+					grid[rand_row][rand_col] = twoOrFour;
+					suitablePlaceFound = true;
+				}
+			}
 			
 		}
 		
 		// update the display 
 		printGrid(grid);
 		
+		// check if game is over 
+		//gameRunning = check_for_gameOver(grid);
+		
+		
 	}
 		
 		
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	// setup input 
+	// when game is over, make the terminal how it was again 
+	restoreTerminal();
 	
 	
 	
