@@ -38,7 +38,7 @@ bool check_for_gameOver(int** grid){
 	// check for vertical matches 
 	for(int c = 0; c< GRID_SIZE; c++){
 		for(int r =0; r< GRID_SIZE -1; r++){
-			if (grid[r][c] == grid[r + 1][r]) return false;
+			if (grid[r][c] == grid[r + 1][c]) return false;
 		}
 	}
 	
@@ -436,16 +436,9 @@ int main(){
 	
 	// add random numbers to the grid 
 	grid[0][1] = 2;
-	grid[1][3] = 2;
-	grid[2][2] = 2;
 	grid [3][1] = 4;
 	
-	
-	for(int i =0; i<GRID_SIZE; i++){
-		for(int j =0; j<GRID_SIZE; j++){
-			grid[i][j] = i + j + 3;
-		}
-	}
+
 	
 	// print the initial grid 
 	printGrid(grid);
@@ -511,15 +504,16 @@ int main(){
 		printGrid(grid);
 		
 		// check if game is over 
-		//gameRunning = check_for_gameOver(grid);
-		
-		
+		gameRunning =  !check_for_gameOver(grid);
+	
 	}
 		
 		
 	
 	// when game is over, make the terminal how it was again 
 	restoreTerminal();
+	
+	std::cout << "Game's over! thank you for playing\n";
 	
 	
 	
